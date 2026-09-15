@@ -4,6 +4,7 @@ import Footer from './components/Footer'
 import Home from './pages/Home'
 import Upload from './pages/Upload'
 import Dashboard from './pages/Dashboard'
+import ProfileSetup from './pages/ProfileSetup'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/upload" element={<Upload />} />
+            <Route path="/profile" element={<ProfileSetup />} />
             <Route path="/dashboard" element={<Dashboard />} />
           </Routes>
         </main>
