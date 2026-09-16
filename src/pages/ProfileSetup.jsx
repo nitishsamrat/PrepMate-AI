@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Webcam from "react-webcam";
 
 function ProfileSetup() {
+  const webcamRef = useRef(null);
   const [image, setImage] = useState(null);
 
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImage(URL.createObjectURL(file));
-    }
+  const capturePhoto = () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setImage(imageSrc);
   };
 
   return (
@@ -17,28 +17,46 @@ function ProfileSetup() {
       </h1>
 
       <p className="mb-6 text-slate-500">
-        Upload your profile photo before starting the interview.
+        Capture a live photo before starting the interview.
       </p>
 
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleImage}
-      />
+      {!image ? (
+        <>
+          <Webcam
+            ref={webcamRef}
+            screenshotFormat="image/jpeg"
+            className="w-full rounded-lg"
+          />
 
-      {image && (
-        <img
-          src={image}
-          alt="profile"
-          className="mt-4 h-40 w-40 rounded-full object-cover"
-        />
+          <button
+            onClick={capturePhoto}
+            className="mt-4 rounded-lg bg-indigo-600 px-6 py-3 text-white"
+          >
+            Capture Photo
+          </button>
+        </>
+      ) : (
+        <>
+          <img
+            src={image}
+            alt="Captured"
+            className="h-60 w-60 rounded-lg object-cover"
+          />
+
+          <button
+            onClick={() => setImage(null)}
+            className="mt-4 rounded-lg bg-red-500 px-6 py-3 text-white"
+          >
+            Retake Photo
+          </button>
+        </>
       )}
 
       <button
         disabled={!image}
         className={`mt-6 rounded-lg px-6 py-3 text-white ${
           image
-            ? "bg-indigo-600"
+            ? "bg-green-600"
             : "bg-slate-400"
         }`}
       >
