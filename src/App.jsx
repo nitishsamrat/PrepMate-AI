@@ -16,7 +16,6 @@ function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/upload" element={<Upload />} />
             <Route path="/profile" element={<ProfileSetup />} />
             <Route
               path="/document-verification"
