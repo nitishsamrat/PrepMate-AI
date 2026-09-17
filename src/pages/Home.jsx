@@ -79,7 +79,7 @@ function Home() {
               Practice interviews. Improve your resume. Get hired.
             </p>
             <Link
-              to="/upload"
+              to="/profile"
               className="mt-8 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 transition hover:bg-indigo-700"
             >
               Get Started
