@@ -1,12 +1,229 @@
 import { useState } from "react";
 
-function DocumentVerification() {
-  const [documents, setDocuments] = useState({
-    tenth: null,
-    twelfth: null,
-    graduation: null,
-    resume: null,
-  });
+function DocumentUpload({
+  title,
+  description,
+  file,
+  onFileChange,
+  onRemove,
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-slate-800">
+          {title}
+        </h3>
+
+        <p className="mt-1 text-sm text-slate-500">
+          {description}
+        </p>
+      </div>
+
+      {!file ? (
+        <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center transition hover:border-indigo-400 hover:bg-indigo-50">
+          <div className="mb-2 text-3xl">
+            📄
+          </div>
+
+          <p className="font-medium text-slate-700">
+            Click to upload PDF
+          </p>
+
+          <p className="mt-1 text-xs text-slate-500">
+            PDF files only
+          </p>
+
+          <input
+            type="file"
+            accept=".pdf,application/pdf"
+            className="hidden"
+            onChange={onFileChange}
+          />
+        </label>
+      ) : (
+        <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="text-2xl">
+              📄
+            </div>
+
+            <div className="min-w-0">
+              <p className="truncate font-medium text-slate-700">
+                {file.name}
+              </p>
+
+              <p className="text-xs text-slate-500">
+                PDF uploaded
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onRemove}
+            className="ml-4 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+          >
+            Remove
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getStatusText(status) {
+  switch (status) {
+    case "matched":
+      return "Matched";
+
+    case "mismatch":
+      return "Mismatch";
+
+    case "not_provided":
+      return "Not Provided";
+
+    case "not_available":
+      return "Not Available";
+
+    default:
+      return "Not Available";
+  }
+}
+
+function getStatusClass(status) {
+  switch (status) {
+    case "matched":
+      return "bg-green-100 text-green-700";
+
+    case "mismatch":
+      return "bg-red-100 text-red-700";
+
+    case "not_provided":
+      return "bg-yellow-100 text-yellow-700";
+
+    case "not_available":
+      return "bg-slate-100 text-slate-600";
+
+    default:
+      return "bg-slate-100 text-slate-600";
+  }
+}
+
+function getFieldLabel(field) {
+  switch (field) {
+    case "name":
+      return "Name";
+
+    case "degree":
+      return "Degree / Course";
+
+    case "institution":
+      return "University / College";
+
+    case "graduationYear":
+      return "Graduation Year";
+
+    default:
+      return field;
+  }
+}
+
+function VerificationRow({
+  label,
+  result,
+}) {
+  return (
+    <tr className="border-b border-slate-200 last:border-b-0">
+      <td className="px-4 py-4 font-medium text-slate-700">
+        {label}
+      </td>
+
+      <td className="px-4 py-4 text-slate-600">
+        {result?.documentValue || "Not Available"}
+      </td>
+
+      <td className="px-4 py-4 text-slate-600">
+        {result?.resumeValue || "Not Provided"}
+      </td>
+
+      <td className="px-4 py-4">
+        <span
+          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(
+            result?.status
+          )}`}
+        >
+          {getStatusText(result?.status)}
+        </span>
+      </td>
+    </tr>
+  );
+}
+
+function ExtractedDocument({
+  title,
+  data,
+}) {
+  if (!data) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 className="mb-4 text-lg font-semibold text-slate-800">
+        {title}
+      </h3>
+
+      <div className="space-y-3">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            Name
+          </p>
+
+          <p className="mt-1 text-slate-700">
+            {data.name || "Not Available"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            Degree / Course
+          </p>
+
+          <p className="mt-1 text-slate-700">
+            {data.degree || "Not Available"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            University / College
+          </p>
+
+          <p className="mt-1 text-slate-700">
+            {data.institution || "Not Available"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            Graduation Year
+          </p>
+
+          <p className="mt-1 text-slate-700">
+            {data.graduationYear || "Not Available"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function DocumentVerification() {
+  const [graduation, setGraduation] =
+    useState(null);
+
+  const [resume, setResume] =
+    useState(null);
 
   const [verification, setVerification] =
     useState(null);
@@ -20,50 +237,53 @@ function DocumentVerification() {
   const [error, setError] =
     useState("");
 
-  const handleFile = (type, file) => {
-    if (!file) {
+  function handleFile(
+    event,
+    setFile
+  ) {
+    const selectedFile =
+      event.target.files?.[0];
+
+    if (!selectedFile) {
       return;
     }
 
-    if (file.type !== "application/pdf") {
+    if (
+      selectedFile.type !==
+        "application/pdf" &&
+      !selectedFile.name
+        .toLowerCase()
+        .endsWith(".pdf")
+    ) {
       setError(
         "Please upload PDF files only."
       );
+
+      event.target.value = "";
       return;
     }
 
-    setDocuments((prev) => ({
-      ...prev,
-      [type]: file,
-    }));
+    setError("");
 
+    setFile(selectedFile);
+  }
+
+  function removeFile(setFile) {
+    setFile(null);
     setVerification(null);
     setExtractedData(null);
     setError("");
-  };
-
-  const removeFile = (type) => {
-    setDocuments((prev) => ({
-      ...prev,
-      [type]: null,
-    }));
-
-    setVerification(null);
-    setExtractedData(null);
-    setError("");
-  };
+  }
 
   const allUploaded =
-    documents.tenth &&
-    documents.twelfth &&
-    documents.graduation &&
-    documents.resume;
+    graduation && resume;
 
-  const handleVerify = async () => {
+  async function handleVerify() {
     if (!allUploaded) {
       setError(
-        "Please upload all four documents."
+        "Please upload both the graduation document and resume."
       );
+
       return;
     }
 
@@ -73,45 +293,36 @@ function DocumentVerification() {
     setExtractedData(null);
 
     try {
-      const formData = new FormData();
-
-      formData.append(
-        "tenth",
-        documents.tenth
-      );
-
-      formData.append(
-        "twelfth",
-        documents.twelfth
-      );
+      const formData =
+        new FormData();
 
       formData.append(
         "graduation",
-        documents.graduation
+        graduation
       );
 
       formData.append(
         "resume",
-        documents.resume
+        resume
       );
 
-      const response = await fetch(
-        "http://localhost:5000/verify",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const response =
+        await fetch(
+          "http://localhost:5000/verify",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
 
       const data =
         await response.json();
 
       if (!response.ok) {
-        setError(
+        throw new Error(
           data.message ||
             "Verification failed."
         );
-        return;
       }
 
       setVerification(
@@ -121,374 +332,209 @@ function DocumentVerification() {
       setExtractedData(
         data.extractedData
       );
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(
+        "Verification error:",
+        err
+      );
 
       setError(
-        "Could not connect to the verification server."
+        err.message ||
+          "Something went wrong while verifying the documents."
       );
     } finally {
       setLoading(false);
     }
-  };
-
-  const uploadBox = (
-    type,
-    title
-  ) => (
-    <div>
-      <label className="mb-2 block font-medium text-slate-700">
-        {title}
-      </label>
-
-      {!documents[type] ? (
-        <input
-          type="file"
-          accept=".pdf,application/pdf"
-          onChange={(e) =>
-            handleFile(
-              type,
-              e.target.files[0]
-            )
-          }
-          className="w-full rounded-lg border border-slate-300 bg-white p-3"
-        />
-      ) : (
-        <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 p-3">
-          <div className="min-w-0">
-            <p className="truncate font-medium text-slate-800">
-              {documents[type].name}
-            </p>
-
-            <p className="text-sm text-slate-500">
-              {(
-                documents[type].size /
-                1024
-              ).toFixed(1)}{" "}
-              KB
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() =>
-              removeFile(type)
-            }
-            className="ml-4 rounded-lg bg-red-100 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-200"
-          >
-            Remove
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
-  const resultRow = (
-    title,
-    result
-  ) => {
-    if (!result) {
-      return null;
-    }
-
-    let content;
-    let className;
-
-    if (
-      result.status ===
-      "matched"
-    ) {
-      content = "✓ Matched";
-      className =
-        "font-semibold text-green-600";
-    } else if (
-      result.status ===
-      "mismatch"
-    ) {
-      content = "✗ Mismatch";
-      className =
-        "font-semibold text-red-600";
-    } else if (
-      result.status ===
-      "not_provided"
-    ) {
-      content = "⚠ Not provided";
-      className =
-        "font-semibold text-yellow-600";
-    } else {
-      content = "⚠ Not available";
-      className =
-        "font-semibold text-yellow-600";
-    }
-
-    return (
-      <div className="flex items-center justify-between border-b border-slate-200 py-4 last:border-b-0">
-        <span className="font-medium text-slate-700">
-          {title}
-        </span>
-
-        <span className={className}>
-          {content}
-        </span>
-      </div>
-    );
-  };
-
-  const extractedRow = (
-    title,
-    marksheetValue,
-    resumeValue
-  ) => (
-    <div className="border-b border-slate-200 py-4 last:border-b-0">
-      <p className="mb-2 font-semibold text-slate-700">
-        {title}
-      </p>
-
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="rounded-lg bg-slate-50 p-3 text-sm">
-          <span className="font-medium">
-            Marksheet:
-          </span>{" "}
-          {marksheetValue ??
-            "Not found"}
-        </div>
-
-        <div className="rounded-lg bg-slate-50 p-3 text-sm">
-          <span className="font-medium">
-            Resume:
-          </span>{" "}
-          {resumeValue ??
-            "Not provided"}
-        </div>
-      </div>
-    </div>
-  );
+  }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16">
+    <div className="min-h-screen bg-slate-50 px-4 py-10">
+      <div className="mx-auto max-w-6xl">
+        {/* Header */}
 
-      <h1 className="mb-2 text-3xl font-bold text-slate-900">
-        Document Verification
-      </h1>
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-slate-900">
+            Document Verification
+          </h1>
 
-      <p className="mb-8 text-slate-500">
-        Upload your academic marksheets
-        and resume for verification.
-      </p>
+          <p className="mx-auto mt-2 max-w-2xl text-slate-500">
+            Upload your graduation document and
+            resume. We will compare the important
+            academic information between them.
+          </p>
+        </div>
 
-     
-      {/* DOCUMENT UPLOAD SECTION */}
-      
+        {/* Upload Section */}
 
-      {!verification && (
-        <>
-          <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
+        <div className="grid gap-6 md:grid-cols-2">
+          <DocumentUpload
+            title="Graduation Document"
+            description="Upload your graduation marksheet or grade card in PDF format."
+            file={graduation}
+            onFileChange={(event) =>
+              handleFile(
+                event,
+                setGraduation
+              )
+            }
+            onRemove={() =>
+              removeFile(setGraduation)
+            }
+          />
 
-            {uploadBox(
-              "tenth",
-              "10th Marksheet"
-            )}
+          <DocumentUpload
+            title="Resume"
+            description="Upload your current resume in PDF format."
+            file={resume}
+            onFileChange={(event) =>
+              handleFile(
+                event,
+                setResume
+              )
+            }
+            onRemove={() =>
+              removeFile(setResume)
+            }
+          />
+        </div>
 
-            {uploadBox(
-              "twelfth",
-              "12th Marksheet"
-            )}
+        {/* Error */}
 
-            {uploadBox(
-              "graduation",
-              "Graduation Marksheet"
-            )}
-
-            {uploadBox(
-              "resume",
-              "Resume"
-            )}
-
+        {error && (
+          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
           </div>
+        )}
 
+        {/* Verify Button */}
+
+        <div className="mt-8 flex justify-center">
           <button
             type="button"
-            disabled={
-              !allUploaded ||
-              loading
-            }
             onClick={handleVerify}
-            className={`mt-8 rounded-lg px-6 py-3 font-semibold text-white ${
-              allUploaded &&
-              !loading
-                ? "bg-indigo-600 hover:bg-indigo-700"
-                : "cursor-not-allowed bg-slate-400"
-            }`}
+            disabled={
+              !allUploaded || loading
+            }
+            className="rounded-xl bg-indigo-600 px-8 py-3 font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {loading
               ? "Verifying..."
               : "Verify Documents"}
           </button>
-        </>
-      )}
-
-     
-      {/* ERROR */}
-     
-
-      {error && (
-        <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-          {error}
         </div>
-      )}
 
+        {/* Verification Result */}
 
-      {/* VERIFICATION RESULT */}
-     
+        {verification && (
+          <div className="mt-10">
+            <div
+              className={`rounded-2xl border p-6 ${
+                verification.hasMismatch
+                  ? "border-red-200 bg-red-50"
+                  : verification.allMatched
+                  ? "border-green-200 bg-green-50"
+                  : "border-yellow-200 bg-yellow-50"
+              }`}
+            >
+              <h2 className="text-xl font-bold text-slate-800">
+                Verification Result
+              </h2>
 
-      {verification && (
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
-
-          <h2 className="mb-4 text-2xl font-bold text-slate-900">
-            Verification Result
-          </h2>
-
-          {verification.hasMismatch ? (
-            <div className="mb-6 rounded-lg bg-red-50 p-4 font-semibold text-red-700">
-              ✗ Some available information
-              does not match.
+              <p className="mt-2 text-sm text-slate-600">
+                {verification.allMatched
+                  ? "All required information matches between the graduation document and resume."
+                  : verification.hasMismatch
+                  ? "Some information does not match between the graduation document and resume."
+                  : "Some information could not be verified."}
+              </p>
             </div>
-          ) : verification.hasUnavailable ||
-            verification.hasNotProvided ? (
-            <div className="mb-6 rounded-lg bg-yellow-50 p-4 font-semibold text-yellow-700">
-              ⚠ Some information could
-              not be automatically
-              verified.
+
+            {/* Comparison Table */}
+
+            <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-175">
+                  <thead className="bg-slate-100">
+                    <tr>
+                      <th className="px-4 py-4 text-left text-sm font-semibold text-slate-700">
+                        Information
+                      </th>
+
+                      <th className="px-4 py-4 text-left text-sm font-semibold text-slate-700">
+                        Graduation Document
+                      </th>
+
+                      <th className="px-4 py-4 text-left text-sm font-semibold text-slate-700">
+                        Resume
+                      </th>
+
+                      <th className="px-4 py-4 text-left text-sm font-semibold text-slate-700">
+                        Result
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {Object.entries(
+                      verification.results || {}
+                    ).map(
+                      ([
+                        field,
+                        result,
+                      ]) => (
+                        <VerificationRow
+                          key={field}
+                          label={getFieldLabel(
+                            field
+                          )}
+                          result={result}
+                        />
+                      )
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          ) : (
-            <div className="mb-6 rounded-lg bg-green-50 p-4 font-semibold text-green-700">
-              ✓ All available information
-              matched successfully.
+
+            {/* Extracted Information */}
+
+            {extractedData && (
+              <div className="mt-8">
+                <h2 className="mb-4 text-xl font-bold text-slate-800">
+                  Extracted Information
+                </h2>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <ExtractedDocument
+                    title="Graduation Document"
+                    data={
+                      extractedData.graduation
+                    }
+                  />
+
+                  <ExtractedDocument
+                    title="Resume"
+                    data={
+                      extractedData.resume
+                    }
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Continue */}
+
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                className="rounded-xl bg-indigo-600 px-8 py-3 font-semibold text-white transition hover:bg-indigo-700"
+              >
+                Continue to Interview
+              </button>
             </div>
-          )}
-
-          <div>
-
-            {resultRow(
-              "Name",
-              verification.results.name
-            )}
-
-            {resultRow(
-              "10th Percentage",
-              verification.results
-                .tenthPercentage
-            )}
-
-            {resultRow(
-              "12th Percentage",
-              verification.results
-                .twelfthPercentage
-            )}
-
-            {resultRow(
-              "Graduation Percentage",
-              verification.results
-                .graduationPercentage
-            )}
-
-            {resultRow(
-              "Graduation CGPA",
-              verification.results
-                .graduationCGPA
-            )}
-
-            {resultRow(
-              "Degree",
-              verification.results
-                .degree
-            )}
-
           </div>
-
-          <button
-            type="button"
-            className="mt-6 rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white hover:bg-indigo-700"
-          >
-            Continue to Interview
-          </button>
-
-        </div>
-      )}
-
-      {/* EXTRACTED INFORMATION */}
-
-      {extractedData && (
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
-
-          <h2 className="mb-4 text-2xl font-bold text-slate-900">
-            Extracted Information
-          </h2>
-
-          <div>
-
-            {extractedRow(
-              "Name",
-              extractedData.tenth
-                ?.name,
-              extractedData.resume
-                ?.name
-            )}
-
-            {extractedRow(
-              "10th Percentage",
-              extractedData.tenth
-                ?.percentage,
-              extractedData.resume
-                ?.tenthPercentage
-            )}
-
-            {extractedRow(
-              "12th Percentage",
-              extractedData.twelfth
-                ?.percentage,
-              extractedData.resume
-                ?.twelfthPercentage
-            )}
-
-            {extractedRow(
-              "Graduation Percentage",
-              extractedData.graduation
-                ?.percentage,
-              extractedData.resume
-                ?.graduationPercentage
-            )}
-
-            {extractedRow(
-              "Graduation CGPA",
-              extractedData.graduation
-                ?.cgpa,
-              extractedData.resume
-                ?.graduationCGPA
-            )}
-
-            {extractedRow(
-              "Graduation SGPA",
-              extractedData.graduation
-                ?.sgpa,
-              null
-            )}
-
-            {extractedRow(
-              "Degree",
-              extractedData.graduation
-                ?.degree,
-              extractedData.resume
-                ?.degree
-            )}
-
-          </div>
-
-        </div>
-      )}
-
+        )}
+      </div>
     </div>
   );
 }
-
-export default DocumentVerification;

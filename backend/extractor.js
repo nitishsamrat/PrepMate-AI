@@ -8,556 +8,433 @@ function cleanText(text) {
     .trim();
 }
 
-// NAME
+/*
+  --------------------------------------------------
+  NAME
+  --------------------------------------------------
+*/
 
-function normalizeName(name) {
-  if (!name) return "";
-
-  return name
-    .toUpperCase()
-    .replace(
-      /\b(?:OF|S\/O|D\/O|F\/O|C\/O)\b.*$/i,
-      ""
-    )
-    .replace(/[^A-Z ]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function isValidName(name) {
-  if (!name) return false;
-
-  const words = name.split(" ");
-
-  if (words.length < 2 || words.length > 5) {
-    return false;
-  }
-
-  if (name.length < 5 || name.length > 60) {
-    return false;
-  }
-
-  const blockedWords = [
-    "RESUME",
-    "CURRICULUM",
-    "VITAE",
-    "PROFILE",
-    "EDUCATION",
-    "CONTACT",
-    "OBJECTIVE",
-    "SKILLS",
-    "EXPERIENCE",
-  ];
-
-  return !words.some((word) =>
-    blockedWords.includes(word)
-  );
-}
-
-function extractName(text, documentType) {
+function extractGraduationName(text) {
   const cleaned = cleanText(text);
 
-  // MARKSHEET
-  
+  const match = cleaned.match(
+    /(?:^|\n)\s*(?:NAME|STUDENT\s*NAME|CANDIDATE\s*NAME)\s*[:\-]?\s*([A-Za-z][A-Za-z .']*?)(?=\s+(?:ROLL\s*NO|ROLL\s*NUMBER|REGISTRATION|REGISTRATION\s*NO|ENROLLMENT|PROGRAM|COURSE|FATHER|MOTHER)|\n|$)/i
+  );
 
-  if (documentType !== "resume") {
-    const patterns = [
-      /(?:student\s*name|candidate\s*name|name\s*of\s*(?:the\s*)?student)\s*[:\-]?\s*([A-Za-z][A-Za-z .'-]{2,60})/i,
-
-      /\bname\s*[:\-]?\s*([A-Za-z][A-Za-z .'-]{2,60})/i,
-    ];
-
-    for (const pattern of patterns) {
-      const match = cleaned.match(pattern);
-
-      if (match) {
-        const name = normalizeName(match[1]);
-
-        if (isValidName(name)) {
-          return name;
-        }
-      }
-    }
-
-    return null;
+  if (match) {
+    return match[1]
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
-  // RESUME
-  
+  return null;
+}
+
+function extractResumeName(text) {
+  const cleaned = cleanText(text);
+
   const lines = cleaned
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 
-  for (const line of lines.slice(0, 15)) {
-    const match = line.match(
-      /^(?:name|candidate\s*name|full\s*name)\s*[:\-]?\s*(.+)$/i
-    );
+  const ignoredLines = [
+    "resume",
+    "curriculum vitae",
+    "cv",
+    "profile",
+    "education",
+    "skills",
+    "projects",
+    "experience",
+    "contact",
+    "summary",
+  ];
 
-    if (match) {
-      const name = normalizeName(match[1]);
+  for (const line of lines.slice(0, 12)) {
+    const lower = line.toLowerCase();
 
-      if (isValidName(name)) {
-        return name;
-      }
+    if (ignoredLines.includes(lower)) {
+      continue;
     }
-  }
 
-  for (const line of lines.slice(0, 8)) {
-    const name = normalizeName(line);
-
-    if (isValidName(name)) {
-      return name;
+    if (line.includes("@")) {
+      continue;
     }
-  }
 
-  return null;
-}
+    if (/https?:\/\//i.test(line)) {
+      continue;
+    }
 
-
-// CLASS X / XII PERCENTAGE
-
-
-function isValidPercentage(value) {
-  return (
-    Number.isFinite(value) &&
-    value >= 0 &&
-    value <= 100
-  );
-}
-
-
-function extractPercentage(
-  text,
-  documentType
-) {
-  const cleaned = cleanText(text);
-
-  // Resume
-  
-
-  if (documentType === "resume") {
-    return extractResumePercentage(cleaned);
-  }
-
-  // 10th / ICSE
- 
-
-  if (documentType === "10th") {
-    return extractICSEPercentage(cleaned);
-  }
-  // 12th / ISC
-
-  if (documentType === "12th") {
-    return extractISCPercentage(cleaned);
-  }
-
-  // Graduation
-
-
-  if (documentType === "graduation") {
-    return extractGraduationPercentage(cleaned);
-  }
-
-  return null;
-}
-
-// ICSE CLASS X
-
-
-function extractICSEPercentage(text) {
-  const subjectMarks =
-    extractICSESubjectMarks(text);
-
-  console.log(
-    "ICSE subject marks found:",
-    subjectMarks
-  );
-
-  if (subjectMarks.length < 5) {
-    return null;
-  }
-
-  const filteredMarks = subjectMarks.filter(
-    (mark) => mark !== 33
-  );
-
-  if (filteredMarks.length < 5) {
-    return null;
-  }
-
-  /* ICSE percentage is calculated using the best five subjects.*/
-
-  const bestFive = [...filteredMarks]
-    .sort((a, b) => b - a)
-    .slice(0, 5);
-
-  const total = bestFive.reduce(
-    (sum, mark) => sum + mark,
-    0
-  );
-
-  const percentage =
-    (total / 500) * 100;
-
-  return Number(
-    percentage.toFixed(2)
-  );
-}
-
-
-function extractICSESubjectMarks(text) {
-  const marks = [];
-
-  const numberWords =
-    "(?:ZERO|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE)";
-
-  const pattern = new RegExp(
-    "\\b(\\d{2,3})\\s+" +
-      numberWords +
-      "(?:\\s+" +
-      numberWords +
-      ")?\\b",
-    "gi"
-  );
-
-  let match;
-
-  while (
-    (match = pattern.exec(text)) !== null
-  ) {
-    const value = Number(match[1]);
+    if (/\d{7,}/.test(line)) {
+      continue;
+    }
 
     if (
-      value >= 0 &&
-      value <= 100 &&
-      value !== 33
+      /^[A-Za-z][A-Za-z .']{2,60}$/.test(line)
     ) {
-      marks.push(value);
+      return line
+        .replace(/\s+/g, " ")
+        .trim();
     }
   }
 
-  if (marks.length < 5) {
-    const percentageSection =
-      text.match(
-        /PERCENTAGE\s+MARKS([\s\S]{0,1200})/i
-      );
-
-    if (percentageSection) {
-      const section =
-        percentageSection[1];
-
-      const numbers =
-        section.match(
-          /\b(?:[4-9]\d|100)\b/g
-        ) || [];
-
-      for (const number of numbers) {
-        const value = Number(number);
-
-        if (
-          value >= 40 &&
-          value <= 100 &&
-          value !== 33 &&
-          !marks.includes(value)
-        ) {
-          marks.push(value);
-        }
-      }
-    }
-  }
-
-  return marks;
+  return null;
 }
 
-// ISC CLASS XII
+/*
+  --------------------------------------------------
+  DEGREE / COURSE
+  --------------------------------------------------
+*/
 
+function cleanDegree(value) {
+  if (!value) return null;
 
-function extractISCPercentage(text) {
-  /* ISC percentage uses the best four subjects.*/
-
-  const subjectMarks =
-    extractISCSubjectMarks(text);
-
-  if (subjectMarks.length < 4) {
-    return null;
-  }
-
-  const filtered = subjectMarks.filter(
-    (mark) => mark !== 35
-  );
-
-  if (filtered.length < 4) {
-    return null;
-  }
-
-  // Highest four subjects
-  const bestFour = [...filtered]
-    .sort((a, b) => b - a)
-    .slice(0, 4);
-
-  const total = bestFour.reduce(
-    (sum, mark) => sum + mark,
-    0
-  );
-
-  const percentage =
-    total / bestFour.length;
-
-  return Number(
-    percentage.toFixed(2)
-  );
+  return value
+    .replace(/\s+/g, " ")
+    .replace(
+      /\s+(?:COLLEGE\s*\/\s*INSTITUTION|COLLEGE|INSTITUTION)\s*:/i,
+      ""
+    )
+    .trim();
 }
 
+function extractGraduationDegree(text) {
+  const cleaned = cleanText(text);
 
-function extractISCSubjectMarks(text) {
-  const marks = [];
+  /*
+    Primary source:
 
-  const pattern =
-    /\b(\d{2,3})\s+(?:ZERO|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE)(?:\s+(?:ZERO|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE))?\b/gi;
+    PROGRAM: BACHELOR OF TECHNOLOGY IN
+    COMPUTER SCIENCE & ENGINEERING
 
-  let match;
+    Stop before the next document field.
+  */
 
-  while (
-    (match = pattern.exec(text)) !== null
-  ) {
-    const value = Number(
-      match[1]
+  const programMatch = cleaned.match(
+    /(?:PROGRAM|COURSE|DEGREE)\s*[:\-]\s*([\s\S]*?)(?=\s+(?:COLLEGE\s*\/\s*INSTITUTION|COLLEGE|INSTITUTION|ROLL\s*NO|REGISTRATION|SEMESTER|EXAMINATION|SGPA|CGPA|TOTAL)|\n\s*(?:COLLEGE\s*\/\s*INSTITUTION|COLLEGE|INSTITUTION|ROLL\s*NO|REGISTRATION|SEMESTER|EXAMINATION|SGPA|CGPA|TOTAL)|$)/i
+  );
+
+  if (programMatch) {
+    const degree = cleanDegree(
+      programMatch[1]
     );
 
     if (
-      value >= 0 &&
-      value <= 100 &&
-      value !== 35
+      degree &&
+      /bachelor|master|b\.?\s*tech|m\.?\s*tech|b\.?\s*e|m\.?\s*e/i.test(
+        degree
+      )
     ) {
-      marks.push(value);
+      return degree;
     }
   }
 
-  return marks;
+  /*
+    Fallback:
+    Find only the actual degree phrase.
+  */
+
+  const degreePatterns = [
+    /\bBACHELOR\s+OF\s+TECHNOLOGY(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bBACHELOR\s+OF\s+ENGINEERING(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bBACHELOR\s+OF\s+SCIENCE(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bBACHELOR\s+OF\s+COMPUTER\s+APPLICATIONS\b/i,
+
+    /\bB\.?\s*TECH\.?(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bB\.?\s*E\.?(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bB\.?\s*SC\.?(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bB\.?\s*C\.?\s*A\.?\b/i,
+
+    /\bMASTER\s+OF\s+TECHNOLOGY(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bMASTER\s+OF\s+ENGINEERING(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bMASTER\s+OF\s+SCIENCE(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bMASTER\s+OF\s+COMPUTER\s+APPLICATIONS\b/i,
+
+    /\bM\.?\s*TECH\.?(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+  ];
+
+  for (const pattern of degreePatterns) {
+    const match = cleaned.match(pattern);
+
+    if (match) {
+      return cleanDegree(match[0]);
+    }
+  }
+
+  return null;
 }
 
-// RESUME PERCENTAGE
+function extractResumeDegree(text) {
+  const cleaned = cleanText(text);
 
+  /*
+    Find Education section.
+  */
 
-function extractResumePercentage(text) {
-
-  const match = text.match(
-    /(?:percentage|percent|aggregate|overall)[^0-9]{0,30}(\d{1,3}(?:\.\d+)?)\s*%/i
+  const educationMatch = cleaned.match(
+    /(?:^|\n)\s*EDUCATION\s*(?:\n|$)([\s\S]*?)(?=\n\s*(?:SKILLS|PROJECTS|EXPERIENCE|PROFILE|CERTIFICATIONS|ACHIEVEMENTS|CONTACT|TECHNICAL\s+SKILLS)\s*(?:\n|$)|$)/i
   );
 
-  if (match) {
-    const value = Number(
-      match[1]
-    );
+  const educationText =
+    educationMatch
+      ? educationMatch[1]
+      : cleaned;
 
-    if (isValidPercentage(value)) {
-      return value;
-    }
-  }
+  const degreePatterns = [
+    /\bBACHELOR\s+OF\s+TECHNOLOGY(?:\s+IN\s+[A-Za-z&., ]+)?/i,
 
-  return null;
-}
+    /\bBACHELOR\s+OF\s+ENGINEERING(?:\s+IN\s+[A-Za-z&., ]+)?/i,
 
-// GRADUATION PERCENTAGE
+    /\bBACHELOR\s+OF\s+SCIENCE(?:\s+IN\s+[A-Za-z&., ]+)?/i,
 
+    /\bBACHELOR\s+OF\s+COMPUTER\s+APPLICATIONS\b/i,
 
-function extractGraduationPercentage(text) {
-  const patterns = [
-    /(?:graduation|degree|aggregate|percentage)[^0-9]{0,50}(\d{1,3}(?:\.\d+)?)\s*%/i,
+    /\bB\.?\s*TECH\.?(?:\s+IN\s+[A-Za-z&., ]+)?/i,
 
-    /(\d{1,3}(?:\.\d+)?)\s*%\s*(?:percentage|aggregate)/i,
+    /\bB\.?\s*E\.?(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bB\.?\s*SC\.?(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bB\.?\s*C\.?\s*A\.?\b/i,
+
+    /\bMASTER\s+OF\s+TECHNOLOGY(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bMASTER\s+OF\s+ENGINEERING(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bMASTER\s+OF\s+SCIENCE(?:\s+IN\s+[A-Za-z&., ]+)?/i,
+
+    /\bMASTER\s+OF\s+COMPUTER\s+APPLICATIONS\b/i,
+
+    /\bM\.?\s*TECH\.?(?:\s+IN\s+[A-Za-z&., ]+)?/i,
   ];
 
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
+  for (const pattern of degreePatterns) {
+    const match =
+      educationText.match(pattern);
 
     if (match) {
-      const value = Number(
-        match[1]
-      );
-
-      if (
-        isValidPercentage(value)
-      ) {
-        return value;
-      }
+      return cleanDegree(match[0]);
     }
   }
 
   return null;
 }
 
+/*
+  --------------------------------------------------
+  UNIVERSITY / COLLEGE
+  --------------------------------------------------
+*/
 
-// CGPA
-
-
-function extractCGPA(text) {
+function extractGraduationInstitution(text) {
   const cleaned = cleanText(text);
 
-  const patterns = [
+  /*
+    Specific MAKAUT pattern.
+  */
 
-    /(?:cgpa|c\.?\s*g\.?\s*p\.?\s*a\.?)\s*[:\-]?\s*(\d+(?:\.\d+)?)/i,
+  const makautMatch = cleaned.match(
+    /MAULANA\s+ABUL\s+KALAM\s+AZAD\s+UNIVERSITY\s+OF\s+TECHNOLOGY(?:\s*,?\s*WEST\s+BENGAL)?/i
+  );
 
-    /(\d+(?:\.\d+)?)\s*(?:\/\s*10)?\s*(?:cgpa|c\.?\s*g\.?\s*p\.?\s*a\.?)/i,
-  ];
+  if (makautMatch) {
+    return makautMatch[0]
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
-  for (const pattern of patterns) {
-    const match =
-      cleaned.match(pattern);
+  /*
+    Otherwise inspect individual lines.
+  */
 
-    if (match) {
-      const value =
-        Number(match[1]);
+  const lines = cleaned
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
-
-      if (
-        value >= 0 &&
-        value <= 10
-      ) {
-        return value;
-      }
+  for (const line of lines) {
+    if (
+      /\bUNIVERSITY\b/i.test(line) &&
+      !/EXAMINATION|EXAM|RESULT|SEMESTER|GRADE\s*CARD/i.test(
+        line
+      )
+    ) {
+      return line
+        .replace(/\s+/g, " ")
+        .trim();
     }
   }
 
   return null;
 }
 
-// SGPA
-
-function extractSGPA(text) {
+function extractResumeInstitution(text) {
   const cleaned = cleanText(text);
 
-  const patterns = [
+  /*
+    Restrict extraction to Education section.
+  */
 
-    /sgpa[\s\S]{0,100}?[:\-]\s*(\d+(?:\.\d+)?)/i,
+  const educationMatch = cleaned.match(
+    /(?:^|\n)\s*EDUCATION\s*(?:\n|$)([\s\S]*?)(?=\n\s*(?:SKILLS|PROJECTS|EXPERIENCE|PROFILE|CERTIFICATIONS|ACHIEVEMENTS|CONTACT|TECHNICAL\s+SKILLS)\s*(?:\n|$)|$)/i
+  );
 
-    /sgpa\s*[:\-]?\s*(\d+(?:\.\d+)?)/i,
+  const educationText =
+    educationMatch
+      ? educationMatch[1]
+      : cleaned;
 
+  /*
+    MAKAUT can appear in different forms.
+  */
 
-    /(\d+(?:\.\d+)?)\s*sgpa\b/i,
-  ];
+  const makautMatch =
+    educationText.match(
+      /MAULANA\s+ABUL\s+KALAM\s+AZAD\s+UNIVERSITY\s+OF\s+TECHNOLOGY(?:\s*,?\s*(?:WEST\s+BENGAL|KOLKATA|INDIA|WEST\s+BENGAL\s*,?\s*KOLKATA\s*,?\s*INDIA)*)?/i
+    );
 
-  for (const pattern of patterns) {
-    const match =
-      cleaned.match(pattern);
+  if (makautMatch) {
+    return makautMatch[0]
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
-    if (match) {
-      const value =
-        Number(match[1]);
+  const lines = educationText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
-      if (
-        value >= 0 &&
-        value <= 10
-      ) {
-        return value;
-      }
+  for (const line of lines) {
+    if (
+      /\bUNIVERSITY\b|\bCOLLEGE\b/i.test(
+        line
+      )
+    ) {
+      return line
+        .replace(/\s+/g, " ")
+        .trim();
     }
   }
 
   return null;
 }
 
+/*
+  --------------------------------------------------
+  GRADUATION YEAR
+  --------------------------------------------------
+*/
 
-// DEGREE
-
-
-function extractDegree(text) {
-  const cleaned =
-    cleanText(text).toLowerCase();
-
-  if (
-    cleaned.includes(
-      "bachelor of technology"
-    ) ||
-    /\bb\.?\s*tech\b/i.test(
-      cleaned
-    ) ||
-    /\bbtech\b/i.test(
-      cleaned
-    )
-  ) {
-    return "Bachelor of Technology";
-  }
-
-  if (
-    cleaned.includes(
-      "bachelor of engineering"
-    ) ||
-    /\bb\.?\s*e\.?\b/i.test(
-      cleaned
-    )
-  ) {
-    return "Bachelor of Engineering";
-  }
-
-  if (
-    cleaned.includes(
-      "bachelor of science"
-    ) ||
-    /\bb\.?\s*sc\.?\b/i.test(
-      cleaned
-    )
-  ) {
-    return "Bachelor of Science";
-  }
-
-  if (
-    cleaned.includes(
-      "bachelor of computer applications"
-    ) ||
-    /\bbca\b/i.test(
-      cleaned
-    )
-  ) {
-    return "Bachelor of Computer Applications";
-  }
-
-  return null;
-}
-
-// PASSING YEAR
-
-
-function extractPassingYear(
-  text,
-  type
-) {
+function extractGraduationYear(text) {
   const cleaned = cleanText(text);
 
-  const patterns = [];
+  /*
+    IMPORTANT:
 
-  if (type === "10th") {
-    patterns.push(
-      /(?:class\s*x\b|class\s*10\b|10th|secondary)[\s\S]{0,100}\b(20\d{2})\b/i
-    );
+    If the document only says:
+
+    THIRD YEAR SECOND SEMESTER
+    EXAMINATION OF 2025-26
+
+    this is an academic/examination session,
+    NOT necessarily the graduation year.
+
+    Therefore we do not return 2025-26 as the
+    graduation year.
+  */
+
+  const explicitGraduationYear = cleaned.match(
+    /(?:YEAR\s+OF\s+PASSING|PASSING\s+YEAR|GRADUATION\s+YEAR|YEAR\s+OF\s+GRADUATION|YEAR\s+OF\s+COMPLETION)\s*[:\-]?\s*((?:19|20)\d{2})/i
+  );
+
+  if (explicitGraduationYear) {
+    return explicitGraduationYear[1];
   }
 
-  if (type === "12th") {
-    patterns.push(
-      /(?:class\s*xii\b|class\s*12\b|12th|higher\s*secondary)[\s\S]{0,100}\b(20\d{2})\b/i
-    );
+  /*
+    Look for a clearly stated completion year.
+  */
+
+  const completionYear = cleaned.match(
+    /(?:COMPLETED|COMPLETION|GRADUATED|GRADUATION)[\s\S]{0,50}?\b((?:19|20)\d{2})\b/i
+  );
+
+  if (completionYear) {
+    return completionYear[1];
   }
 
-  if (type === "graduation") {
-    patterns.push(
-      /(?:b\.?\s*tech|btech|bachelor|graduation)[\s\S]{0,150}\b(20\d{2})\b/i
-    );
+  /*
+    Do NOT use an academic session such as 2025-26
+    as graduation year.
+  */
+
+  return null;
+}
+
+function extractResumeGraduationYear(text) {
+  const cleaned = cleanText(text);
+
+  /*
+    Find Education section.
+  */
+
+  const educationMatch = cleaned.match(
+    /(?:^|\n)\s*EDUCATION\s*(?:\n|$)([\s\S]*?)(?=\n\s*(?:SKILLS|PROJECTS|EXPERIENCE|PROFILE|CERTIFICATIONS|ACHIEVEMENTS|CONTACT|TECHNICAL\s+SKILLS)\s*(?:\n|$)|$)/i
+  );
+
+  const educationText =
+    educationMatch
+      ? educationMatch[1]
+      : cleaned;
+
+  /*
+    Standard resume format:
+
+    2023 - 2027
+    2023 – 2027
+  */
+
+  const yearRange = educationText.match(
+    /\b((?:19|20)\d{2})\s*[-–—]\s*((?:19|20)\d{2})\b/
+  );
+
+  if (yearRange) {
+    return yearRange[2];
   }
 
-  for (const pattern of patterns) {
-    const match =
-      cleaned.match(pattern);
+  /*
+    Also support:
 
-    if (match) {
-      return Number(match[1]);
-    }
+    2023 to 2027
+  */
+
+  const toRange = educationText.match(
+    /\b((?:19|20)\d{2})\s+to\s+((?:19|20)\d{2})\b/i
+  );
+
+  if (toRange) {
+    return toRange[2];
   }
 
   return null;
 }
 
-// MAIN EXTRACTION
+/*
+  --------------------------------------------------
+  MAIN EXTRACTION
+  --------------------------------------------------
+*/
 
 function extractInformation(
   text,
@@ -565,100 +442,56 @@ function extractInformation(
 ) {
   const cleaned = cleanText(text);
 
-  const information = {
-    documentType,
+  if (!cleaned) {
+    return {
+      name: null,
+      degree: null,
+      institution: null,
+      graduationYear: null,
+    };
+  }
 
-    name: extractName(
-      cleaned,
-      documentType
-    ),
+  if (documentType === "graduation") {
+    return {
+      name:
+        extractGraduationName(cleaned),
 
-    passingYear:
-      extractPassingYear(
-        cleaned,
-        documentType
-      ),
+      degree:
+        extractGraduationDegree(cleaned),
+
+      institution:
+        extractGraduationInstitution(cleaned),
+
+      graduationYear:
+        extractGraduationYear(cleaned),
+    };
+  }
+
+  if (documentType === "resume") {
+    return {
+      name:
+        extractResumeName(cleaned),
+
+      degree:
+        extractResumeDegree(cleaned),
+
+      institution:
+        extractResumeInstitution(cleaned),
+
+      graduationYear:
+        extractResumeGraduationYear(
+          cleaned
+        ),
+    };
+  }
+
+  return {
+    name: null,
+    degree: null,
+    institution: null,
+    graduationYear: null,
   };
-
-  // 10th
-
-  if (
-    documentType === "10th"
-  ) {
-    information.percentage =
-      extractPercentage(
-        cleaned,
-        "10th"
-      );
-  }
-
-  // 12th
- 
-
-  if (
-    documentType === "12th"
-  ) {
-    information.percentage =
-      extractPercentage(
-        cleaned,
-        "12th"
-      );
-  }
-
-  // Graduation
-
-
-  if (
-    documentType ===
-    "graduation"
-  ) {
-    information.percentage =
-      extractPercentage(
-        cleaned,
-        "graduation"
-      );
-
-    information.cgpa =
-      extractCGPA(cleaned);
-
-    information.sgpa =
-      extractSGPA(cleaned);
-
-    information.degree =
-      extractDegree(cleaned);
-  }
-
-  // Resume
-  
-
-  if (
-    documentType === "resume"
-  ) {
-    information.tenthPercentage =
-      extractResumePercentage(
-        cleaned
-      );
-
-    information.twelfthPercentage =
-      extractResumePercentage(
-        cleaned
-      );
-
-    information.graduationPercentage =
-      extractResumePercentage(
-        cleaned
-      );
-
-    information.graduationCGPA =
-      extractCGPA(cleaned);
-
-    information.degree =
-      extractDegree(cleaned);
-  }
-
-  return information;
 }
-
 
 export {
   extractInformation,

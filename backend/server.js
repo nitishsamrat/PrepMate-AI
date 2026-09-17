@@ -13,9 +13,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+/*
+  Resume and documents are kept only in memory.
+  They are not permanently saved on the server.
+*/
+
 const upload = multer({
   storage: multer.memoryStorage(),
 });
+
+/*
+  Check whether normal PDF text extraction
+  produced useful text.
+*/
 
 function hasUsefulText(text) {
   if (!text) {
@@ -28,6 +38,10 @@ function hasUsefulText(text) {
 
   return cleanedText.length >= 30;
 }
+
+/*
+  Extract text directly from a PDF.
+*/
 
 async function extractPdfText(buffer) {
   const parser = new PDFParse({
@@ -42,6 +56,12 @@ async function extractPdfText(buffer) {
     await parser.destroy();
   }
 }
+
+/*
+  First try normal PDF text extraction.
+  If the PDF does not contain useful text,
+  use OCR instead.
+*/
 
 async function getDocumentText(file) {
   const pdfText = await extractPdfText(
@@ -69,66 +89,79 @@ async function getDocumentText(file) {
   };
 }
 
+/*
+  Test route
+*/
+
 app.get("/", (req, res) => {
   res.json({
     message: "PrepMate-AI backend is running",
   });
 });
 
+/*
+  DOCUMENT VERIFICATION
+
+  Required files:
+
+  1. graduation
+  2. resume
+*/
+
 app.post(
   "/verify",
 
   upload.fields([
-    { name: "tenth", maxCount: 1 },
-    { name: "twelfth", maxCount: 1 },
-    { name: "graduation", maxCount: 1 },
-    { name: "resume", maxCount: 1 },
+    {
+      name: "graduation",
+      maxCount: 1,
+    },
+    {
+      name: "resume",
+      maxCount: 1,
+    },
   ]),
 
   async (req, res) => {
     try {
       const files = req.files;
 
+      /*
+        Make sure both required files
+        have been uploaded.
+      */
+
       if (
-        !files?.tenth ||
-        !files?.twelfth ||
         !files?.graduation ||
         !files?.resume
       ) {
         return res.status(400).json({
           message:
-            "All four documents are required",
+            "Graduation document and resume are required",
         });
       }
 
-      const tenth = await getDocumentText(
-        files.tenth[0]
-      );
-
-      const twelfth = await getDocumentText(
-        files.twelfth[0]
-      );
+      /*
+        Extract text from graduation document.
+      */
 
       const graduation =
         await getDocumentText(
           files.graduation[0]
         );
 
-      const resume = await getDocumentText(
-        files.resume[0]
-      );
+      /*
+        Extract text from resume.
+      */
 
-      const tenthInfo =
-        extractInformation(
-          tenth.text,
-          "10th"
+      const resume =
+        await getDocumentText(
+          files.resume[0]
         );
 
-      const twelfthInfo =
-        extractInformation(
-          twelfth.text,
-          "12th"
-        );
+      /*
+        Extract only the required information.
+      */
 
       const graduationInfo =
         extractInformation(
@@ -142,34 +175,47 @@ app.post(
           "resume"
         );
 
+      /*
+        Compare graduation document
+        information with resume.
+      */
+
       const verification =
         compareDocuments(
-          tenthInfo,
-          twelfthInfo,
           graduationInfo,
           resumeInfo
         );
+
+      /*
+        Send only the required processed
+        information to the frontend.
+
+        Raw OCR text is NOT returned.
+      */
 
       res.json({
         message:
           "Documents verified successfully",
 
         ocrUsed: {
-          tenth: tenth.usedOCR,
-          twelfth: twelfth.usedOCR,
-          graduation: graduation.usedOCR,
-          resume: resume.usedOCR,
+          graduation:
+            graduation.usedOCR,
+
+          resume:
+            resume.usedOCR,
         },
 
         verification,
 
         extractedData: {
-          tenth: tenthInfo,
-          twelfth: twelfthInfo,
-          graduation: graduationInfo,
-          resume: resumeInfo,
+          graduation:
+            graduationInfo,
+
+          resume:
+            resumeInfo,
         },
       });
+
     } catch (error) {
       console.error(
         "Document processing error:",
@@ -179,6 +225,7 @@ app.post(
       res.status(500).json({
         message:
           "Error processing documents",
+
         error: error.message,
       });
     }
