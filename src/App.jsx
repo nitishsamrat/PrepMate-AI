@@ -6,6 +6,7 @@ import Upload from './pages/Upload'
 import Dashboard from './pages/Dashboard'
 import ProfileSetup from './pages/ProfileSetup'
 import DocumentVerification from './pages/DocumentVerification'
+import Profile from "./pages/Profile";
 
 function App() {
   return (
@@ -16,7 +17,7 @@ function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/profile" element={<ProfileSetup />} />
+            <Route path="/profile" element={<Profile />} />
             <Route
               path="/document-verification"
               element={<DocumentVerification />}
