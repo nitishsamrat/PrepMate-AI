@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import Upload from './pages/Upload'
 import Dashboard from './pages/Dashboard'
 import ProfileSetup from './pages/ProfileSetup'
+import Login from './pages/Login'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/profile" element={<ProfileSetup />} />
             <Route path="/dashboard" element={<Dashboard />} />
