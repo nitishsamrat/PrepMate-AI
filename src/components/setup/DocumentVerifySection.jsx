@@ -10,24 +10,58 @@ import {
 } from 'lucide-react'
 
 const DOC_FIELDS = [
-  { type: 'tenth', title: '10th Marksheet', hint: 'Class X / ICSE PDF' },
-  { type: 'twelfth', title: '12th Marksheet', hint: 'Class XII / ISC PDF' },
-  { type: 'graduation', title: 'Graduation Marksheet', hint: 'Degree / semester PDF' },
-  { type: 'resume', title: 'Resume', hint: 'Latest resume PDF' },
+  {
+    type: 'graduation',
+    title: 'Graduation Document',
+    hint: 'Degree / university PDF',
+  },
+  {
+    type: 'resume',
+    title: 'Resume',
+    hint: 'Latest resume PDF',
+  },
 ]
 
 function statusMeta(result) {
   if (!result) return null
+
   if (result.status === 'matched') {
-    return { label: 'Matched', className: 'bg-emerald-50 text-emerald-700' }
+    return {
+      label: 'Matched',
+      className: 'bg-emerald-50 text-emerald-700',
+    }
   }
+
   if (result.status === 'mismatch') {
-    return { label: 'Mismatch', className: 'bg-red-50 text-red-700' }
+    return {
+      label: 'Mismatch',
+      className: 'bg-red-50 text-red-700',
+    }
   }
+
   if (result.status === 'not_provided') {
-    return { label: 'Not provided', className: 'bg-amber-50 text-amber-700' }
+    return {
+      label: 'Not provided',
+      className: 'bg-amber-50 text-amber-700',
+    }
   }
-  return { label: 'Not available', className: 'bg-amber-50 text-amber-700' }
+
+  return {
+    label: 'Not available',
+    className: 'bg-amber-50 text-amber-700',
+  }
+}
+
+function displayValue(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
+    return 'Not available'
+  }
+
+  return value
 }
 
 function DocumentVerifySection({
@@ -45,241 +79,454 @@ function DocumentVerifySection({
   const [dragOver, setDragOver] = useState(null)
 
   const allUploaded =
-    documents.tenth &&
-    documents.twelfth &&
-    documents.graduation &&
-    documents.resume
+    Boolean(documents.graduation) &&
+    Boolean(documents.resume)
 
-  const uploadedCount = DOC_FIELDS.filter((f) => documents[f.type]).length
+  const uploadedCount = DOC_FIELDS.filter(
+    (field) => documents[field.type]
+  ).length
+
+  const handleFileSelect = (type, file) => {
+    if (!file) return
+
+    onFileChange(type, file)
+  }
 
   const handleDrop = (type, event) => {
     event.preventDefault()
     setDragOver(null)
+
     const file = event.dataTransfer.files?.[0]
-    if (file) onFileChange(type, file)
+
+    if (file) {
+      handleFileSelect(type, file)
+    }
+  }
+
+  const handleBrowse = (type) => {
+    inputRefs.current[type]?.click()
   }
 
   return (
-    <div>
-      {!verification ? (
-        <>
-          <p className="mb-3 text-[13px] text-slate-400">{uploadedCount} of 4 uploaded</p>
+    <div className="space-y-5">
+      {/* Upload section */}
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">
+              Upload documents
+            </p>
 
-          <div className="grid gap-2.5 sm:grid-cols-2">
-            {DOC_FIELDS.map(({ type, title, hint }) => {
-              const file = documents[type]
-              const isOver = dragOver === type
+            <p className="mt-0.5 text-xs text-slate-500">
+              Upload your graduation document and latest resume.
+            </p>
+          </div>
 
-              return (
-                <div key={type} className="min-w-0">
-                  <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <p className="text-[13px] font-medium text-slate-700">{title}</p>
-                    {file && (
-                      <button
-                        type="button"
-                        onClick={() => onRemoveFile(type)}
-                        className="inline-flex items-center gap-1 text-[12px] font-medium text-slate-400 transition hover:text-red-600"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                        Remove
-                      </button>
-                    )}
-                  </div>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+            {uploadedCount}/2 uploaded
+          </span>
+        </div>
 
-                  {file ? (
-                    <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-600 shadow-sm">
-                        <FileText className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-medium text-slate-800">
-                          {file.name}
-                        </p>
-                        <p className="text-[12px] text-slate-500">
-                          {(file.size / 1024).toFixed(1)} KB · PDF ready
-                        </p>
-                      </div>
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+        <div className="space-y-3">
+          {DOC_FIELDS.map((field) => {
+            const file = documents[field.type]
+            const isDragOver =
+              dragOver === field.type
+
+            return (
+              <div
+                key={field.type}
+                onDragOver={(event) => {
+                  event.preventDefault()
+                  setDragOver(field.type)
+                }}
+                onDragLeave={() => {
+                  setDragOver(null)
+                }}
+                onDrop={(event) =>
+                  handleDrop(field.type, event)
+                }
+                className={`rounded-xl border p-3 transition ${
+                  isDragOver
+                    ? 'border-indigo-400 bg-indigo-50'
+                    : file
+                      ? 'border-emerald-200 bg-emerald-50/40'
+                      : 'border-slate-200 bg-slate-50/50'
+                }`}
+              >
+                <input
+                  ref={(element) => {
+                    inputRefs.current[field.type] =
+                      element
+                  }}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="hidden"
+                  onChange={(event) => {
+                    const selectedFile =
+                      event.target.files?.[0]
+
+                    handleFileSelect(
+                      field.type,
+                      selectedFile
+                    )
+
+                    event.target.value = ''
+                  }}
+                />
+
+                {!file ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleBrowse(field.type)
+                    }
+                    className="flex w-full items-center gap-3 text-left"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200">
+                      <FileText className="h-5 w-5" />
                     </div>
-                  ) : (
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-slate-800">
+                        {field.title}
+                      </p>
+
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {field.hint}
+                      </p>
+                    </div>
+
+                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
+                      <Upload className="h-3.5 w-3.5" />
+                      Browse
+                    </span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                      <FileText className="h-5 w-5" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-800">
+                        {file.name}
+                      </p>
+
+                      <p className="mt-0.5 text-xs text-emerald-600">
+                        PDF uploaded
+                      </p>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => inputRefs.current[type]?.click()}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        setDragOver(type)
-                      }}
-                      onDragLeave={() => setDragOver(null)}
-                      onDrop={(e) => handleDrop(type, e)}
-                      className={`flex w-full flex-col items-center justify-center rounded-xl border border-dashed px-3 py-4 text-center transition duration-200 ${
-                        isOver
-                          ? 'border-indigo-400 bg-indigo-50'
-                          : 'border-slate-300 bg-slate-50/80 hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-50/40 hover:shadow-sm active:translate-y-0 active:scale-[0.99]'
-                      }`}
+                      onClick={() =>
+                        onRemoveFile(field.type)
+                      }
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-red-500"
+                      title="Remove file"
                     >
-                      <Upload className="mb-2 h-4 w-4 text-slate-400" />
-                      <span className="text-[13px] font-medium text-slate-700">
-                        Drop PDF or browse
-                      </span>
-                      <span className="mt-0.5 text-[12px] text-slate-400">{hint}</span>
-                      <input
-                        ref={(el) => {
-                          inputRefs.current[type] = el
-                        }}
-                        type="file"
-                        accept=".pdf,application/pdf"
-                        className="hidden"
-                        onChange={(e) => {
-                          onFileChange(type, e.target.files?.[0])
-                          e.target.value = ''
-                        }}
-                      />
+                      <X className="h-4 w-4" />
                     </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              disabled={!allUploaded || loading}
-              onClick={onVerify}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition duration-200 hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-600/30 active:translate-y-0 active:scale-[0.98] active:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none disabled:hover:translate-y-0"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Verifying…
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="h-4 w-4" />
-                  Verify documents
-                </>
-              )}
-            </button>
-            {!allUploaded && (
-              <p className="text-[12px] text-slate-400">Upload all four PDFs to continue.</p>
-            )}
-          </div>
-        </>
-      ) : (
-        <div className="space-y-5">
-          {verification.hasMismatch ? (
-            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
-              <p className="text-[13px] font-medium text-red-700">
-                Some available information does not match.
-              </p>
-            </div>
-          ) : verification.hasUnavailable || verification.hasNotProvided ? (
-            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-              <p className="text-[13px] font-medium text-amber-800">
-                Some information could not be automatically verified.
-              </p>
-            </div>
-          ) : (
-            <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-              <p className="text-[13px] font-medium text-emerald-800">
-                All available information matched successfully.
-              </p>
-            </div>
-          )}
-
-          <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
-            {[
-              ['Name', verification.results.name],
-              ['10th Percentage', verification.results.tenthPercentage],
-              ['12th Percentage', verification.results.twelfthPercentage],
-              ['Graduation Percentage', verification.results.graduationPercentage],
-              ['Graduation CGPA', verification.results.graduationCGPA],
-              ['Degree', verification.results.degree],
-            ].map(([title, result]) => {
-              const meta = statusMeta(result)
-              if (!meta) return null
-              return (
-                <div
-                  key={title}
-                  className="flex items-center justify-between gap-3 bg-white px-4 py-3"
-                >
-                  <span className="text-[13px] font-medium text-slate-700">{title}</span>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${meta.className}`}
-                  >
-                    {meta.label}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-
-          {extractedData && (
-            <details className="rounded-xl border border-slate-200 bg-slate-50/60 open:bg-white">
-              <summary className="cursor-pointer list-none px-4 py-3 text-[13px] font-semibold text-slate-700 marker:content-none [&::-webkit-details-marker]:hidden">
-                View extracted values
-              </summary>
-              <div className="space-y-3 border-t border-slate-100 px-4 py-4">
-                {[
-                  ['Name', extractedData.tenth?.name, extractedData.resume?.name],
-                  [
-                    '10th Percentage',
-                    extractedData.tenth?.percentage,
-                    extractedData.resume?.tenthPercentage,
-                  ],
-                  [
-                    '12th Percentage',
-                    extractedData.twelfth?.percentage,
-                    extractedData.resume?.twelfthPercentage,
-                  ],
-                  [
-                    'Graduation Percentage',
-                    extractedData.graduation?.percentage,
-                    extractedData.resume?.graduationPercentage,
-                  ],
-                  [
-                    'Graduation CGPA',
-                    extractedData.graduation?.cgpa,
-                    extractedData.resume?.graduationCGPA,
-                  ],
-                  ['Degree', extractedData.graduation?.degree, extractedData.resume?.degree],
-                ].map(([title, marksheet, resume]) => (
-                  <div key={title}>
-                    <p className="mb-1.5 text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                      {title}
-                    </p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <div className="rounded-lg bg-slate-50 px-3 py-2 text-[13px] text-slate-700">
-                        <span className="font-medium text-slate-500">Marksheet:</span>{' '}
-                        {marksheet ?? 'Not found'}
-                      </div>
-                      <div className="rounded-lg bg-slate-50 px-3 py-2 text-[13px] text-slate-700">
-                        <span className="font-medium text-slate-500">Resume:</span>{' '}
-                        {resume ?? 'Not provided'}
-                      </div>
-                    </div>
                   </div>
-                ))}
+                )}
               </div>
-            </details>
-          )}
+            )
+          })}
+        </div>
+      </div>
 
-          <button
-            type="button"
-            onClick={onResetResults}
-            className="text-[13px] font-medium text-indigo-600 transition duration-200 hover:text-indigo-700 hover:underline active:scale-[0.98]"
-          >
-            Re-upload documents
-          </button>
+      {/* Privacy note */}
+      <div className="flex gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3">
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600" />
+
+        <div>
+          <p className="text-xs font-semibold text-indigo-900">
+            Document privacy
+          </p>
+
+          <p className="mt-0.5 text-xs leading-relaxed text-indigo-700">
+            Your resume is processed temporarily for
+            verification and is not stored permanently.
+          </p>
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 p-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+
+          <p className="text-xs leading-relaxed text-red-700">
+            {error}
+          </p>
         </div>
       )}
 
-      {error && (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
-          {error}
+      {/* Verify button */}
+      {!verification && (
+        <button
+          type="button"
+          disabled={!allUploaded || loading}
+          onClick={onVerify}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Verifying documents...
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="h-4 w-4" />
+              Verify Documents
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Verification result */}
+      {verification && (
+        <div className="space-y-4">
+          {/* Overall result */}
+          <div
+            className={`rounded-xl border p-4 ${
+              verification.canContinue
+                ? 'border-emerald-200 bg-emerald-50'
+                : 'border-red-200 bg-red-50'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              {verification.canContinue ? (
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+              )}
+
+              <div>
+                <p
+                  className={`text-sm font-semibold ${
+                    verification.canContinue
+                      ? 'text-emerald-800'
+                      : 'text-red-800'
+                  }`}
+                >
+                  {verification.canContinue
+                    ? 'Document verification successful'
+                    : 'Document verification failed'}
+                </p>
+
+                <p
+                  className={`mt-1 text-xs leading-relaxed ${
+                    verification.canContinue
+                      ? 'text-emerald-700'
+                      : 'text-red-700'
+                  }`}
+                >
+                  {verification.canContinue
+                    ? 'All required information matches between your graduation document and resume.'
+                    : 'All four required fields must match before you can continue to the interview.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Verification result table */}
+          <div>
+            <div className="mb-2">
+              <p className="text-sm font-semibold text-slate-900">
+                Verification result
+              </p>
+
+              <p className="mt-0.5 text-xs text-slate-500">
+                Each required field is checked separately.
+              </p>
+            </div>
+
+            <div className="overflow-hidden rounded-xl border border-slate-200">
+              <div className="divide-y divide-slate-100">
+                {[
+                  [
+                    'Name',
+                    verification.results?.name,
+                  ],
+                  [
+                    'Degree / Course',
+                    verification.results?.degree,
+                  ],
+                  [
+                    'University / College',
+                    verification.results?.institution,
+                  ],
+                  [
+                    'Graduation Year',
+                    verification.results?.graduationYear,
+                  ],
+                ].map(
+                  ([label, result]) => {
+                    const meta =
+                      statusMeta(result)
+
+                    return (
+                      <div
+                        key={label}
+                        className="grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-3 sm:grid-cols-[1fr_auto_auto]"
+                      >
+                        <p className="text-xs font-medium text-slate-700">
+                          {label}
+                        </p>
+
+                        <span className="max-w-45 truncate text-xs text-slate-500 sm:max-w-55">
+                          {displayValue(
+                            result?.documentValue
+                          )}
+                        </span>
+
+                        {meta && (
+                          <span
+                            className={`rounded-full px-2 py-1 text-[11px] font-semibold ${meta.className}`}
+                          >
+                            {meta.label}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  }
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Extracted information */}
+          {extractedData && (
+            <div>
+              <div className="mb-2">
+                <p className="text-sm font-semibold text-slate-900">
+                  Extracted information
+                </p>
+
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Information detected from the uploaded documents.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Graduation Document
+                  </p>
+
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-[11px] text-slate-400">
+                        Name
+                      </p>
+                      <p className="text-xs font-medium text-slate-700">
+                        {displayValue(
+                          extractedData.graduation?.name
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-400">
+                        Degree / Course
+                      </p>
+                      <p className="text-xs font-medium text-slate-700">
+                        {displayValue(
+                          extractedData.graduation?.degree
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-400">
+                        University / College
+                      </p>
+                      <p className="text-xs font-medium text-slate-700">
+                        {displayValue(
+                          extractedData.graduation?.institution
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-400">
+                        Graduation Year
+                      </p>
+                      <p className="text-xs font-medium text-slate-700">
+                        {displayValue(
+                          extractedData.graduation?.graduationYear
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Resume
+                  </p>
+
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-[11px] text-slate-400">
+                        Name
+                      </p>
+                      <p className="text-xs font-medium text-slate-700">
+                        {displayValue(
+                          extractedData.resume?.name
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-400">
+                        Degree / Course
+                      </p>
+                      <p className="text-xs font-medium text-slate-700">
+                        {displayValue(
+                          extractedData.resume?.degree
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-400">
+                        University / College
+                      </p>
+                      <p className="text-xs font-medium text-slate-700">
+                        {displayValue(
+                          extractedData.resume?.institution
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] text-slate-400">
+                        Graduation Year
+                      </p>
+                      <p className="text-xs font-medium text-slate-700">
+                        {displayValue(
+                          extractedData.resume?.graduationYear
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Re-upload */}
+          <button
+            type="button"
+            onClick={onResetResults}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            <Upload className="h-4 w-4" />
+            Re-upload documents
+          </button>
         </div>
       )}
     </div>
