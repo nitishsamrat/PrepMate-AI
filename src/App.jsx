@@ -2,10 +2,10 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Home from './pages/Home'
-import Upload from './pages/Upload'
 import Dashboard from './pages/Dashboard'
 import ProfileSetup from './pages/ProfileSetup'
 import DocumentVerification from './pages/DocumentVerification'
+import Interview from './pages/Interview'
 
 function App() {
   return (
@@ -21,6 +21,7 @@ function App() {
               path="/document-verification"
               element={<DocumentVerification />}
             />
+            <Route path="/interview" element={<Interview />} />
             <Route path="/dashboard" element={<Dashboard />} />
           </Routes>
         </main>

@@ -130,6 +130,19 @@ function ProfileSetup() {
       setExtractedData(
         data.extractedData
       )
+
+      if (data.verification?.canContinue) {
+        localStorage.setItem(
+          'prepmate_session',
+          JSON.stringify({
+            canContinue: true,
+            extractedResume:
+              data.extractedData?.resume || null,
+            resumeText: data.resumeText || '',
+            verifiedAt: Date.now(),
+          })
+        )
+      }
     } catch (err) {
       console.error(err)
 
@@ -307,7 +320,7 @@ function ProfileSetup() {
 
             <p className="mt-0.5 text-sm text-slate-500">
               {canContinue
-                ? 'Your photo and documents are verified. Continue to your dashboard.'
+                ? 'Your photo and documents are verified. Proceed to your interview.'
                 : 'Finish the profile photo and pass document verification to unlock the next step.'}
             </p>
           </div>
@@ -316,11 +329,11 @@ function ProfileSetup() {
             type="button"
             disabled={!canContinue}
             onClick={() =>
-              navigate('/dashboard')
+              navigate('/interview')
             }
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition duration-200 hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-600/30 active:translate-y-0 active:scale-[0.98] active:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none disabled:hover:translate-y-0"
           >
-            Continue
+            Proceed to interview
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
