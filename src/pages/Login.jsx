@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   loginWithEmail,
   loginWithGoogle,
@@ -6,6 +7,7 @@ import {
 } from "../firebase/auth";
 
 function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,6 +19,7 @@ function Login() {
     try {
       await loginWithEmail(email, password);
       console.log("Login successful");
+      navigate("/profile");
     } catch (error) {
       setError(error.message);
     }
