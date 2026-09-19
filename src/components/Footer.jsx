@@ -17,7 +17,7 @@ function Footer() {
           <Link to="/dashboard" className="hover:text-indigo-600">Dashboard</Link>
         </div>
         <p className="text-sm text-slate-400">
-          &copy; {new Date().getFullYear()} PrepMate AI. All rights reserved.
+          &copy ; {new Date().getFullYear()} PrepMate AI. All rights reserved.
         </p>
       </div>
     </footer>
