@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import multer from "multer";
@@ -7,6 +8,10 @@ import { PDFParse } from "pdf-parse";
 import { extractInformation } from "./extractor.js";
 import { compareDocuments } from "./matcher.js";
 import { extractTextWithOCR } from "./ocr.js";
+import {
+  generateQuestions,
+  analyzeAnswer,
+} from "./interview.js";
 
 const app = express();
 
@@ -187,11 +192,14 @@ app.post(
         );
 
       /*
-        Send only the required processed
-        information to the frontend.
-
-        Raw OCR text is NOT returned.
+        Send processed information plus a truncated
+        resume text excerpt for interview generation.
       */
+
+      const resumeText = (resume.text || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 6000);
 
       res.json({
         message:
@@ -214,6 +222,8 @@ app.post(
           resume:
             resumeInfo,
         },
+
+        resumeText,
       });
 
     } catch (error) {
@@ -231,6 +241,53 @@ app.post(
     }
   }
 );
+
+app.post("/api/generate-questions", async (req, res) => {
+  try {
+    const { resumeText, extractedResume } = req.body || {};
+
+    const questions = await generateQuestions({
+      resumeText,
+      extractedResume,
+    });
+
+    res.json({ questions });
+  } catch (error) {
+    console.error("generate-questions error:", error);
+    res.status(500).json({
+      message: "Failed to generate questions",
+      error: error.message,
+    });
+  }
+});
+
+app.post("/api/analyze-answer", async (req, res) => {
+  try {
+    const { question, answer, resumeText, history } =
+      req.body || {};
+
+    if (!question || !answer) {
+      return res.status(400).json({
+        message: "question and answer are required",
+      });
+    }
+
+    const result = await analyzeAnswer({
+      question,
+      answer,
+      resumeText,
+      history,
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error("analyze-answer error:", error);
+    res.status(500).json({
+      message: "Failed to analyze answer",
+      error: error.message,
+    });
+  }
+});
 
 const PORT = 5000;
 
