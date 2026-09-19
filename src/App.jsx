@@ -2,8 +2,10 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Home from './pages/Home'
+import Upload from './pages/Upload'
 import Dashboard from './pages/Dashboard'
 import ProfileSetup from './pages/ProfileSetup'
+import Login from './pages/Login'
 import DocumentVerification from './pages/DocumentVerification'
 import Interview from './pages/Interview'
 
@@ -16,6 +18,8 @@ function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/upload" element={<Upload />} />
             <Route path="/profile" element={<ProfileSetup />} />
             <Route
               path="/document-verification"

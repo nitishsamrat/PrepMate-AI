@@ -4,6 +4,7 @@ import { Menu, X, Sparkles } from 'lucide-react'
 
 const links = [
   { to: '/', label: 'Home' },
+   { to: '/login', label: 'Login' },
   { to: '/profile', label: 'Setup' },
   { to: '/interview', label: 'Interview' },
   { to: '/dashboard', label: 'Dashboard' },
